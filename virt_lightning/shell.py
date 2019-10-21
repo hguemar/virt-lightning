@@ -288,6 +288,30 @@ def ssh(configuration, name=None, **kwargs):
     ui.Selector(sorted(hv.list_domains()), go_ssh)
 
 
+def scp(configuration, source, target, **kwargs):
+    conn = libvirt.open(configuration.libvirt_uri)
+    hv = vl.LibvirtHypervisor(conn)
+
+    domains = [d.dom.name() for d in hv.list_domains()]
+    test = source.split(':')
+    test2 = target.split(':')
+    if (len(test) < 2 and len(test2) < 2) or \
+       (test[0] not in domains and test2[0] not in domains):
+        print("Either the source or the target must be a valid domain")
+    if test[0] in domains:
+        name = test[0]
+        dom = hv.get_domain_by_name(name)
+        source = "{username}@{ipv4}".format(username=dom.username, ipv4=dom.ipv4.ip)
+    else:
+        name = test2[0]
+        dom = hv.get_domain_by_name(name)
+        target = "{username}@{ipv4}:{directory}".format(username=dom.username,
+                                                        ipv4=dom.ipv4.ip,
+                                                        directory=test2[1])
+
+    dom.exec_scp(source, target)
+
+
 def console(configuration, name=None, **kwargs):
     conn = libvirt.open(configuration.libvirt_uri)
     hv = vl.LibvirtHypervisor(conn)
@@ -448,6 +472,12 @@ Example:
         "ssh", help="SSH to a given host", parents=[parent_parser]
     )
     ssh_parser.add_argument("name", help="Name of the host", type=str, nargs="?")
+
+    scp_parser = action_subparsers.add_parser(
+        "scp", help="SCP to a given host", parents=[parent_parser]
+    )
+    scp_parser.add_argument("source", help="Source", type=str)
+    scp_parser.add_argument("target", help="Target", type=str)
 
     console_parser = action_subparsers.add_parser(
         "console", help="Open the console of a given host", parents=[parent_parser]

@@ -693,3 +693,16 @@ class LibvirtDomain:
             "UserKnownHostsFile=/dev/null",
             "{username}@{ipv4}".format(username=self.username, ipv4=self.ipv4.ip),
         )
+
+    def exec_scp(self, source, target):
+        os.execlp(
+            "scp",
+            "scp",
+            "-r",
+            "-o",
+            "StrictHostKeyChecking=no",
+            "-o",
+            "UserKnownHostsFile=/dev/null",
+            source,
+            target
+        )
